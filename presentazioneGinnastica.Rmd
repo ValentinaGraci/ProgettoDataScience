@@ -1,0 +1,291 @@
+---
+title: "Olimpiadi di ginnastica artistica dal 1928 al 2016"
+author: "Valentina Graci"
+output:
+  ioslides_presentation:
+    incremental: yes
+  slidy_presentation:
+    incremental: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r echo=FALSE}
+
+# librerie utilizzate
+
+library(tidyr)
+library(dplyr)
+library(gridExtra) # per raggruppare più grafici
+library(ggplot2)
+library(gganimate)
+library(ggflags)
+library(countrycode)
+
+
+```
+
+## Domande
+
+1.  Esiste una relazione tra la prestazione di una ginnasta nei diversi attrezzi e le sue caratteristiche fisiche (peso e altezza)?
+
+2.  La fascia di età delle migliori ginnaste alle gare olimpiche si è modificata nel corso degli anni?
+
+3.  Le nazioni più forti nella ginnastica artistica sono cambiate nel corso degli anni?
+
+4.  Quali sono le nazioni che dal 1928 al 2016 hanno vinto più medaglie?
+
+## Dataset utilizzati
+
+I dataset utilizzati sono:
+
+<https://www.kaggle.com/datasets/heesoo37/120-years-of-olympic-history-athletes-and-results> -\> contiene 271116 righe e 15 colonne. Ogni riga corrisponde a un singolo atleta che gareggia in un evento olimpico, per il quale sono riportati età, altezza e peso.
+
+<https://www.kaggle.com/datasets/piterfm/olympic-games-medals-19862018?select=olympic_medals.csv> -\> contiene 21698 righe e 12 colonne. Il dataset include medaglie, atleti e nazionalità di ogni atleta.
+
+```{r echo=FALSE}
+athlete_events = read.csv("athlete_events.csv")
+olympic_medals = read.csv("olympic_medals.csv")
+```
+
+```{r echo=FALSE, message=FALSE}
+# dataset athlete_events
+# seleziono le righe e le colonne che mi interessano del dataset importato
+
+gymnastics <- athlete_events %>%
+  filter(Sport == "Gymnastics", Sex == "F") %>%
+  select(- c(Games, Season, Sport, Sex))
+
+```
+
+```{r echo=FALSE, message=FALSE}
+
+# seleziono le ginnaste (righe) del del dataset gymnastics che hanno vinto una medaglia in uno dei 4 attrezzi (non seleziono gare di squadra e all-around).
+
+ginnastica <- gymnastics %>%
+  filter(Event != "Gymnastics Women's Team All-Around", Event != "Gymnastics Women's Individual All-Around", Event != "Gymnastics Women's Team Portable Apparatus", Medal!= "NA")
+
+```
+
+## Domanda 1
+
+**Esiste una relazione tra la prestazione di una ginnasta nei diversi attrezzi e le sue caratteristiche fisiche (peso e altezza)?**
+
+Gli attrezzi della ginnastica artistica femminile sono:
+
+|                                                                                                                                           |                                                                                    |
+|------------------------------------|-------------------------------------|
+| ![Corpo libero](pedana-per-ginnastica-artistica-omologata-fig-per-competizioni-dimensioni-mt-14x14.png){alt="Alt text"} **Corpo libero**  | ![Trave](trave-di-equilibrio-gymnova-omologata-fig.jpeg){alt="Alt text"} **Trave** |
+
+|                                                                                                                       |                                                                                                           |
+|-------------------------------------------|--------------------------------------------|
+| ![Volteggio](tavola-volteggio-da-competizione-gymnova-omologata-fig.jpeg "Volteggio"){alt="Alt text"} **Volteggio**   | ![Parallele asimmetriche](PARALLELE%20GYMOVA%203347%202.jpeg){alt="Alt text" width="241"} **Parallele**   |
+
+```{r echo=FALSE}
+# Per ogni attrezzo faccio un grafico che ha sull'asse x e y rispettivamente il peso e l'altezza della ginnasta. Il pallino indica la medaglia che ha vinto la ginnasta con quella altezza e quel peso. I grafici rappresentano il peso e altezza delle migliori ginnaste (quelle che hanno vinto una medaglia) in un determinato attrezzo. In base al proprio fisico una ginnasta tenderà ad avere prestazioni migliori in un attrezzo piuttosto che in un altro?
+
+Floor <- ginnastica %>%
+  filter(Event == "Gymnastics Women's Floor Exercise", Height != "NA", Weight != "NA") 
+
+f <- ggplot(data = Floor) +
+  geom_point(mapping = aes(x = Weight, y = Height, color = Medal)) +
+  scale_colour_manual(values = c(Gold = "yellow", Silver = "blue", Bronze = "brown"), labels = c("Bronzo", "Oro", "Argento")) +
+  guides(color = guide_legend(title = "Medaglia")) + # imposta il titolo della legenda
+  scale_x_continuous(limits = c(30, 60)) +
+  scale_y_continuous(limits = c(130, 165)) +
+  labs(title = "Corpo libero", x = "Peso (kg)", y = "Altezza (cm)") 
+
+
+
+Vault <- ginnastica %>%
+  filter(Event == "Gymnastics Women's Horse Vault", Height != "NA", Weight != "NA") 
+
+v <- ggplot(data = Vault) +
+  geom_point(mapping = aes(x = Weight, y = Height, color = Medal)) +
+  scale_colour_manual(values = c(Gold = "yellow", Silver = "blue", Bronze = "brown"), labels = c("Bronzo", "Oro", "Argento")) +
+  guides(color = guide_legend(title = "Medaglia")) +
+  scale_x_continuous(limits = c(30, 60)) +
+  scale_y_continuous(limits = c(130, 165)) +
+  labs(title = "Volteggio", x = "Peso (kg)", y = "Altezza (cm)") 
+
+
+
+Bars <- ginnastica %>%
+  filter(Event == "Gymnastics Women's Uneven Bars", Height != "NA", Weight != "NA")
+
+ba <- ggplot(data = Bars) +
+  geom_point(mapping = aes(x = Weight, y = Height, color = Medal))+
+  scale_colour_manual(values = c(Gold = "yellow", Silver = "blue", Bronze = "brown"), labels = c("Bronzo", "Oro", "Argento")) +
+  guides(color = guide_legend(title = "Medaglia")) +
+  scale_x_continuous(limits = c(30, 60)) +
+  scale_y_continuous(limits = c(130, 165)) +
+  labs(title = "Parallele asimmetriche", x = "Peso (kg)", y = "Altezza (cm)") 
+
+
+
+Beam <- ginnastica %>%
+  filter(Event == "Gymnastics Women's Balance Beam", Height != "NA", Weight != "NA") 
+
+be <- ggplot(data = Beam) +
+  geom_point(mapping = aes(x = Weight, y = Height, color = Medal)) +
+  scale_colour_manual(values = c(Gold = "yellow", Silver = "blue", Bronze = "brown"), labels = c("Bronzo", "Oro", "Argento")) +
+  guides(color = guide_legend(title = "Medaglia")) +
+  scale_x_continuous(limits = c(30, 60)) +
+  scale_y_continuous(limits = c(130, 165)) +
+  labs(title = "Trave", x = "Peso (kg)", y = "Altezza (cm)") 
+
+
+#grid.arrange(f, be, ncol = 2, nrow=2)
+#grid.arrange(v, ba, ncol = 2)
+#grid.arrange(f, v, ba, be, ncol = 2, nrow = 2)
+
+
+```
+
+## 
+
+```{r  fig.align='centre', fig.width=8.5, fig.height=6, echo=FALSE}
+grid.arrange(f, be, ba, v, ncol = 2, nrow = 2)
+```
+
+## Domanda 2
+
+**La fascia di età delle migliori ginnaste alle gare olimpiche si è modificata nel corso degli anni?**
+
+```{r echo=FALSE, message=FALSE}
+
+# delezione le ginnaste che hanno vinto una medaglia
+
+migliori <- gymnastics %>%
+  filter(Medal != "NA", Age != "NA")
+
+```
+
+```{r fig.align='centre', fig.width=8, fig.height=4.5, echo=FALSE}
+# creo un grafico che ha sull'asse x e y rispettivamente l'anno dell'olimpiade e l'età della ginnasta. I punti indicano l'età della ginnasta che ha vinto una medaglia in quell'anno 
+
+ggplot(data = migliori, aes(x = Year, y = Age)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  scale_x_continuous(limits = c(1928, 2016), breaks = c(1928, 1936, 1948, 1952, 1956, 1960, 1964, 1968, 1972, 1976, 1980, 1984, 1988, 1992, 1996, 2000, 2004, 2008, 2012, 2016)) +
+  labs(title = "Età delle migliori ginnaste per ogni anno dal 1928 al 2016", x = "Anno", y = "Età") +
+  theme(
+    plot.title = element_text(size = 15),
+    panel.grid.minor = element_blank() # elimina la griglia predefinita ma lascia le griglie dei valori degli assi
+  ) 
+
+
+# in alcuni anni ci sono pochi punti o perchè la stessa ginnasta ha vinto in più attrezzi o hanno vinto ginnaste della stessa età
+# la curva è dovuta probabilmente alla difficoltà di esecuzione degli elementi che prima essendo facili potevano farlo tutti
+
+# 1932 -> si sono disputati solo eventi maschili
+# 1940 e 1944 -> olimpiadi annullate a causa della seconda guerra mondiale
+
+
+```
+
+```{r echo=FALSE, message=FALSE}
+
+# dataset olympic_medals
+# riordino il dataset e prendo righe e colonne che mi servono
+
+Medaglie <- olympic_medals %>%
+  filter((discipline_title == "Artistic Gymnastics" | discipline_title == "Gymnastics Artistic"), event_gender == "Women") %>%
+  separate(slug_game, into = c("Place", "Year"), sep="-")
+  Medaglie$Sport <- Medaglie$discipline_title
+  Medaglie$discipline_title <- NULL
+  Medaglie$Event <- Medaglie$event_title
+  Medaglie$event_title <- NULL
+  Medaglie$Medal <- Medaglie$medal_type
+  Medaglie$medal_type <- NULL
+  Medaglie$Nation <- Medaglie$country_name
+  Medaglie$country_name <- NULL
+  Medaglie$Nat <- Medaglie$country_3_letter_code
+  Medaglie$country_3_letter_code <- NULL
+
+Medagliere <- Medaglie %>%
+  select(Year, Nation, Nat, Medal, Event) %>%
+  filter(Year >= 1928, Year <= 2016)
+
+devtools::install_github("ellisp/ggflags")
+library(ggflags)
+
+medaglie <- Medagliere %>%
+  group_by(Year, Nation, Nat) %>%
+  summarise(TotMed = n()) %>% # numero totale di medaglie di ogni gruppo e lo assegna alla nuova colonna TotMed (conta per ogni anno quante volte compare il nome di una nazione)
+  arrange(Year, -TotMed) # riordino in ordine crescente in base all'anno e all'interno di un anno ordino in ordine decrescente le medaglie
+
+medaglie$ordine <- c(7,6,5, 7,6,5, 7,6,5, 7,6,5,4, 7,6,5,4,3,2, 7,6,5, 7,6,5,4,3, 7,6,5, 7,6,5,4, 7,6,5, 7,6,5,4,3, 7,6,5,4,3, 7,6,5,4,3, 7,6,5,4, 7,6,5,4,3,2, 7,6,5,4,3, 7,6,5,4,3, 7,6,5,4,3,2,1) # Per ogni anno assegno i numeri dal 7 in giù. Quindi nelle righe che contengono la nazione con più medaglie (per ogni anno) sarà associato il numero 7 nella colonna ordine. In questo modo nel grafico animato avrò la barra più in alto sull'asse y sarà anche la più lunga (ovvero quella che ha vinto più medaglie)
+
+medaglie$Code <- tolower(countrycode(medaglie$Nation, "country.name", "iso2c")) # aggiungo alla tabella una colonna Code. tolower() converte i valori della colonna "Nation" in minuscolo, in modo da corrispondere al formato richiesto dalla funzione countrycode(). countrycode() restituisce codici ISO-2 delle nazioni corrispondenti ai nomi delle nazioni nella colonna "Nation". Questi codici vengono inseriti nella nuova colonna.
+```
+
+## Domanda 3
+**Le nazioni più forti nella ginnastica artistica sono cambiate nel corso degli anni?**
+
+```{r echo=FALSE}
+ap = ggplot(medaglie, aes(x = TotMed, y = ordine)) + 
+        geom_col(orientation = "y", fill = "azure3", color = "black") + # geom_col è un grafico a barre ma permette di assegnare dei valori del dataset sia all'asse x che y
+        labs(title = "Numero di medaglie vinte da ogni nazione per ogni anno dal 1928 al 2016", subtitle ='Anno: {closest_state}', subtitle.size = 10, x = "Numero medaglie", y = "Nazione") + # Labels
+        theme_minimal() + # Theme (rimuove la griglia di sfondo, le linee di separazione degli assi e gli sfondi colorati predefiniti)
+        geom_text(aes(x = - 2, y = ordine, label = Nat), hjust = 1) + # x e y sono le coordinate in cui aggiungere l'etichetta Nat, hjust = 1 indica di allineare a destra le etichette
+        geom_text(aes(x = TotMed + 0.5 , y = ordine, label = as.character(TotMed)), hjust = 0, color = "black") + # x e y sono le coordinate in cui aggiungere l'etichetta TotMed (numero come stringa), le etichette sono allineate a sinistra e di colore nero
+        geom_flag(aes(x = -1, y = ordine,  country = Code), size = 10) + # x e y sono le coordinate in cui posizionare le bandiere e size imposta la dimensione delle bandiere
+        transition_states(Year, transition_length = 0.5, state_length = 3) + # Animate (colonna in base a cui si vuole animare il grafico, il tempo che impiega il grafico a cambiare da un anno a un altro, tempo che rimane fermo su un anno)
+        theme(
+            plot.title = element_text(hjust = 0, size = 25), 
+            plot.subtitle = element_text(size = 20),
+            plot.margin = margin(1.5,1.5,1.5,1.5,"cm"),
+            axis.text.y  = element_blank() # nasconde l'asse y
+        )
+
+an = animate(ap, fps = 50, duration=36, width = 1000, height = 600) # fps = frames al secondo (maggiore è fps più è fluido il video)
+an 
+
+
+# EUN = sqadra unificata -> la squadra consisteva di atleti di tutte le ex-repubbliche sovietiche, ad eccezione dei Paesi Baltici. 
+
+# ggflag non contiene la bandiera della cecoslovacchia
+
+```
+
+
+## Domanda 4 
+
+**Quali sono le nazioni che dal 1928 al 2016 hanno vinto più medaglie?**
+
+```{r echo=FALSE}
+
+andamento <- medaglie %>%
+  group_by(Nat) %>% 
+  summarise(Tot = sum(TotMed)) %>% # creo una nuova colonna che contiene la somma delle medaglie vinte da ogni nazione in tutti gli anni (conto quante volte compare una nazione nel dataset medaglie)
+  arrange(-Tot)
+```
+
+``` {r fig.align='centre', fig.width=8, fig.height=5, echo=FALSE}
+# grafico che ha sull'asse x e y rispettivamente il numero totale di medaglie e le nazioni (ordinate in base al numero di medaglie vinte). È un grafico a barre, che indca quante medaglie ha vinto in totale una nazione e le barre sono ordinate da quella più lunga (nazione che ha vinto più medaglie) a quella più corta
+ggplot(andamento, aes(x = Tot, y = reorder(Nat, Tot))) +
+  geom_col() +
+  geom_text(aes(x = Tot + 0.3 , y = Nat, label = as.character(Tot)), hjust = 0, size = 3, color = "black") +
+  labs(title = 'Numero totale di medaglie vinte da ogni nazione dal 1928 al 2016', x = "Numero medaglie", y = "Nazione") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 15),
+    plot.margin = margin(1.5,1.5,1.5,1.5,"cm"),
+   ) 
+
+
+```
+
+## Conclusioni
+
+1.  Esiste una relazione tra la prestazione di una ginnasta nei diversi attrezzi e le sue caratteristiche fisiche.
+
+2.  La fascia di età delle migliori ginnaste alle gare olimpiche si è modificata nel corso degli anni.
+
+3.  Le nazioni più forti nella ginnastica artistica sono cambiate nel corso degli anni.
+
+4.  La nazione che dal 1928 al 2016 ha vinto più medaglie è stata l'Unione Sovietica, seguita da Romania e Stati Uniti.
